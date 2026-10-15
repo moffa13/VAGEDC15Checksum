@@ -31,17 +31,15 @@ public:
 	};
 
 	EDC15Checksum(EDC15File& file);
-
-	ChecksumResult checksumV2002();
-	ChecksumResult checksumTDI41();
-	ChecksumResult checksumTDI41V2();
-	size_t checksum(std::optional<std::filesystem::path> path = std::nullopt);
+	ChecksumResult checksum(std::optional<std::filesystem::path> path = std::nullopt);
 	ChecksumTYPE getChecksumType();
 private:
 	ChecksumResult checkAndFixChecksum(uint32_t seed, size_t start, size_t stop, uint32_t result);
 	uint32_t correction(uint32_t seed, size_t start, size_t stop, uint32_t result);
 	uint32_t checksum(uint32_t seed, size_t start, size_t stop);
-
+	ChecksumResult checksumV2002();
+	ChecksumResult checksumTDI41();
+	ChecksumResult checksumTDI41V2();
 	EDC15File& _file;
 	
 };

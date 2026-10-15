@@ -5,7 +5,7 @@
 #include <tuple>
 #include "Core/BitArithmetics.h"
 
-size_t EDC15Checksum::checksum(std::optional<std::filesystem::path> path)
+EDC15Checksum::ChecksumResult EDC15Checksum::checksum(std::optional<std::filesystem::path> path)
 {
 
     auto type = getChecksumType();
@@ -41,7 +41,7 @@ size_t EDC15Checksum::checksum(std::optional<std::filesystem::path> path)
     }
         
 
-    return 0;
+    return result;
 }
 
 EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41()
