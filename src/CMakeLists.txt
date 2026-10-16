@@ -4,5 +4,5 @@ add_library(VAGEDC15ChecksumCore STATIC
 
 target_include_directories(VAGEDC15ChecksumCore PUBLIC ${CMAKE_CURRENT_SOURCE_DIR})
 
-target_link_libraries(VAGEDC15ChecksumCore PRIVATE vagedc15core)
+target_link_libraries(VAGEDC15ChecksumCore PUBLIC vagedc15core)
 
