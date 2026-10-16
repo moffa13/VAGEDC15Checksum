@@ -13,9 +13,13 @@ FetchContent_MakeAvailable(VAGEDC15Lib)
 
 
 add_subdirectory(src)
-add_subdirectory(app)
+
+if(PROJECT_IS_TOP_LEVEL)
+    add_subdirectory(app)
+endif()
+
 
 include(CTest)
 if(BUILD_TESTING AND PROJECT_IS_TOP_LEVEL)
-	add_subdirectory(tests)
+    add_subdirectory(tests)
 endif()
