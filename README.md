@@ -1,6 +1,8 @@
 # EDC15Checksum
 
-Checksum calculation and correction for **Bosch EDC15 ECUs (VAG group)**.
+Portable checksum calculation and correction for **Bosch EDC15 ECUs (VAG group)**.
+
+This repository exclusively uses the standard cpp library
 
 ## Features
 
@@ -13,6 +15,9 @@ The **TDIv2002** checksum algorithm is implemented incorrectly in every existing
 
 EDC15Checksum handles this case correctly and produces a valid checksum for modifications in that range.
 
+Because of that, depending on the modified regions, the other tools might indicate that the checksums are **incorrect**, it is important not to fix them. The TDI2002 algorithm has been decompiled and reproduced in c++. It's been checked that the ECUs accept the checksums
+
+
 ## Supported checksum types
 
 - TDI41
@@ -24,6 +29,14 @@ EDC15Checksum handles this case correctly and produces a valid checksum for modi
 ```
 VAGEDC15Checksum.exe checksum 038906019NJ.bin --out 038906019NJ.cs.bin
 ```
+
+## Build
+
+Go to the root directory and run:
+
+Run build.sh or build_vsXXXX.bat
+
+The executable will be in build/app, and the library will be inside build/src
 
 ## Library API
 
