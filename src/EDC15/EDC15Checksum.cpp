@@ -5,6 +5,8 @@
 #include <tuple>
 #include "Core/BitArithmetics.h"
 
+EDC15Checksum::EDC15Checksum(EDC15File& file) : _file(file){}
+
 EDC15Checksum::ChecksumResult EDC15Checksum::checksum(std::optional<std::filesystem::path> path)
 {
 
@@ -44,46 +46,6 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksum(std::optional<std::filesys
     return result;
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41()
-{
-
-    ChecksumResult finalResult{};
-    finalResult.fixNeeded = false;
-
-    std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>> checksums;
-
-    checksums.emplace_back(0x00000000, 0x00000000, 0x00000, 0x08000);
-    checksums.emplace_back(0x20575354, 0x35504531, 0x08000, 0x10000);
-    checksums.emplace_back(0x00000000, 0xEFCD8631, 0x10000, 0x14000);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x14000, 0x4C000);
-
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x4C000, 0x50000);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x50000, 0x50B80);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x50B80, 0x5C000);
-
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x5C000, 0x60000);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x60000, 0x60B80);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x60B80, 0x6C000);
-    
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x6C000, 0x70000);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70000, 0x70B80);
-    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70B80, 0x7C000);
-
-    for (const auto& i : checksums) {
-        if (_file.readWord(std::get<3>(i) - 4) == 0xC3C3) {
-            continue;
-        }
-        auto res = checkAndFixChecksum(std::get<0>(i), std::get<2>(i), std::get<3>(i), std::get<1>(i));
-        
-        finalResult.computedBlocks++;
-        finalResult.checksumBlocksThatAreChecked++;
-        finalResult.fixNeeded += res.fixNeeded;
-    }
-
-    return finalResult;
-
-}
-
 EDC15Checksum::ChecksumTYPE EDC15Checksum::getChecksumType() {
     //seg010:000113E8       subc    r1, word_F8C0
     //seg010:000113EC       subc    r6, word_F8C2
@@ -111,11 +73,33 @@ EDC15Checksum::ChecksumTYPE EDC15Checksum::getChecksumType() {
     }
 }
 
+EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41()
+{
+    std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>> checksums;
+
+    checksums.emplace_back(0x00000000, 0x00000000, 0x00000, 0x08000);
+    checksums.emplace_back(0x20575354, 0x35504531, 0x08000, 0x10000);
+    checksums.emplace_back(0x00000000, 0xEFCD8631, 0x10000, 0x14000);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x14000, 0x4C000);
+
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x4C000, 0x50000);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x50000, 0x50B80);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x50B80, 0x5C000);
+
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x5C000, 0x60000);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x60000, 0x60B80);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x60B80, 0x6C000);
+    
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x6C000, 0x70000);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70000, 0x70B80);
+    checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70B80, 0x7C000);
+
+    return staticChecksum(checksums);
+
+}
+
 EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41V2()
 {
-
-    ChecksumResult finalResult{};
-    finalResult.fixNeeded = false;
 
     std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>> checksums;
 
@@ -131,7 +115,13 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41V2()
     checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70000, 0x70B80);
     checksums.emplace_back(0xEFCD8631, 0xEFCD8631, 0x70B80, 0x7C000);
 
+    return staticChecksum(checksums);
 
+}
+
+EDC15Checksum::ChecksumResult EDC15Checksum::staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums) {
+    ChecksumResult finalResult{};
+    finalResult.fixNeeded = false;
     for (const auto& i : checksums) {
         if (_file.readWord(std::get<3>(i) - 4) == 0xC3C3) {
             continue;
@@ -144,7 +134,6 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41V2()
     }
 
     return finalResult;
-
 }
 
 EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
@@ -161,6 +150,11 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
     
     // First check
     tmpResult = checkAndFixChecksum(seedIn, 0x08000, 0x10000, 0x35504531);
+    result.computedBlocks++;
+    result.checksumBlocksThatAreChecked++;
+    result.fixNeeded += tmpResult.fixNeeded;
+
+    tmpResult = checkAndFixChecksum(0x00000000, 0x10000, 0x14000, 0xEFCD8631);
     result.computedBlocks++;
     result.checksumBlocksThatAreChecked++;
     result.fixNeeded += tmpResult.fixNeeded;
@@ -288,6 +282,3 @@ uint32_t EDC15Checksum::correction(uint32_t seed, size_t start, size_t stop, uin
 
     return (uint32_t(word1) << 16) | word2;
 }
-
-EDC15Checksum::EDC15Checksum(EDC15File& file) : _file(file)
-{}

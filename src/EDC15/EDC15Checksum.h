@@ -40,6 +40,7 @@ private:
 	ChecksumResult checksumV2002();
 	ChecksumResult checksumTDI41();
 	ChecksumResult checksumTDI41V2();
+	EDC15Checksum::ChecksumResult staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums);
 	EDC15File& _file;
 	
 };
