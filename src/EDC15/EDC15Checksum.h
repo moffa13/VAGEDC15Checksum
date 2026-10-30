@@ -1,15 +1,16 @@
 #pragma once
 
 #include "EDC15/EDC15File.h"
-
 #include <filesystem>
 #include <cstdint>
+#include <optional>
+#include <string_view>
+#include <vector>
+#include <tuple>
+
 
 class EDC15Checksum {
 public:
-
-	
-
 	struct HookSite {
 		size_t hookPosition;
 		size_t nextHandlerAddr;
@@ -17,11 +18,10 @@ public:
 		size_t defaultTargetAddr;
 	};
 
-	struct ChecksumResult {
+	struct ChecksumInfo {
 		size_t fixNeeded;
 		size_t computedBlocks;
 		size_t checksumBlocksThatAreChecked;
-		uint32_t sum;
 	};
 
 	enum class ChecksumTYPE {
@@ -31,16 +31,19 @@ public:
 	};
 
 	EDC15Checksum(EDC15File& file);
-	ChecksumResult checksum(std::optional<std::filesystem::path> path = std::nullopt);
+	ChecksumInfo checksum(const std::optional<std::filesystem::path>& path = std::nullopt);
 	ChecksumTYPE getChecksumType();
 private:
-	ChecksumResult checkAndFixChecksum(uint32_t seed, size_t start, size_t stop, uint32_t result);
+	bool checkAndFixChecksum(uint32_t seed, size_t start, size_t stop, uint32_t result);
+	static constexpr std::string_view toString(EDC15Checksum::ChecksumTYPE t);
 	uint32_t correction(uint32_t seed, size_t start, size_t stop, uint32_t result);
 	uint32_t checksum(uint32_t seed, size_t start, size_t stop);
-	ChecksumResult checksumV2002();
-	ChecksumResult checksumTDI41();
-	ChecksumResult checksumTDI41V2();
-	EDC15Checksum::ChecksumResult staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums);
+	ChecksumInfo checksumV2002();
+	ChecksumInfo checksumTDI41();
+	ChecksumInfo checksumTDI41V2();
+	EDC15Checksum::ChecksumInfo staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums);
 	EDC15File& _file;
 	
 };
+
+

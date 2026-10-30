@@ -3,47 +3,59 @@
 #include "EDC15/EDC15File.h"
 #include <array>
 #include <tuple>
+#include <optional>
+#include <filesystem>
+#include <cstddef>
 #include "Core/BitArithmetics.h"
 
 EDC15Checksum::EDC15Checksum(EDC15File& file) : _file(file){}
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checksum(std::optional<std::filesystem::path> path)
+/// <summary>
+/// Main public API entry point.
+/// Detects the checksum algorithm from known patterns, verifies every checksum block
+/// and corrects the ones that don't match.
+/// If a path is given, the (possibly modified) file is written to it.
+/// </summary>
+/// <param name="path">Output file path; if empty, nothing is written to disk</param>
+/// <returns>Statistics about the checked and corrected blocks</returns>
+/// <exception cref="std::runtime_error">If no known checksum algorithm is detected</exception>
+EDC15Checksum::ChecksumInfo EDC15Checksum::checksum(const std::optional<std::filesystem::path>& path)
 {
+    const auto type = getChecksumType();
 
-    auto type = getChecksumType();
-
-    ChecksumResult result{};
-    std::string algorithmUsed{};
-
-    if (type == ChecksumTYPE::TDI2002) {
-        result = checksumV2002();
-        algorithmUsed = "VAGTDI_V2002";
-    }
-    else if (type == ChecksumTYPE::TDI41) {
-        result = checksumTDI41();
-        algorithmUsed = "VAGTDI_V41";
-    }
-    else if (type == ChecksumTYPE::TDI41V2) {
-        result = checksumTDI41V2();
-        algorithmUsed = "VAGTDI_V41_V2";
-    }
-    else {
-        throw std::runtime_error{ "Unknown detected checksum" };
+    ChecksumInfo result{};
+    switch (type) {
+        case ChecksumTYPE::TDI2002: result = checksumV2002();   break;
+        case ChecksumTYPE::TDI41:   result = checksumTDI41();   break;
+        case ChecksumTYPE::TDI41V2: result = checksumTDI41V2(); break;
+        default:
+            throw std::runtime_error{ "Unknown checksum algorithm" };
     }
 
-    Logger::info("Running {} algorithm, total {} checksum block, {} need calculation, {} fixed.", algorithmUsed, result.computedBlocks, result.checksumBlocksThatAreChecked, result.fixNeeded);
+    Logger::info(
+        "{} algorithm: {} checksum blocks, {} checked, {} fixed.",
+        toString(type), result.computedBlocks,
+        result.checksumBlocksThatAreChecked, result.fixNeeded
+    );
 
-    if (result.fixNeeded == 0) {
-        Logger::info("The file already has its checksums correct, no change to the file was made.");
-    }
-    
+    if (result.fixNeeded == 0)
+        Logger::info("All checksums were already correct, no change was made.");
+
     if (path) {
         _file.writeFile(*path);
-        Logger::info("File written at {}", path->string());
+        Logger::info("File written to {}", path->string());
     }
-        
 
     return result;
+}
+
+constexpr std::string_view EDC15Checksum::toString(EDC15Checksum::ChecksumTYPE t) {
+    switch (t) {
+        case EDC15Checksum::ChecksumTYPE::TDI2002: return "VAGTDI_V2002";
+        case EDC15Checksum::ChecksumTYPE::TDI41:   return "VAGTDI_V41";
+        case EDC15Checksum::ChecksumTYPE::TDI41V2: return "VAGTDI_V41_V2";
+    }
+    return "Unknown";
 }
 
 EDC15Checksum::ChecksumTYPE EDC15Checksum::getChecksumType() {
@@ -73,7 +85,7 @@ EDC15Checksum::ChecksumTYPE EDC15Checksum::getChecksumType() {
     }
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41()
+EDC15Checksum::ChecksumInfo EDC15Checksum::checksumTDI41()
 {
     std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>> checksums;
 
@@ -98,7 +110,7 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41()
 
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41V2()
+EDC15Checksum::ChecksumInfo EDC15Checksum::checksumTDI41V2()
 {
 
     std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>> checksums;
@@ -119,28 +131,27 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumTDI41V2()
 
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums) {
-    ChecksumResult finalResult{};
+EDC15Checksum::ChecksumInfo EDC15Checksum::staticChecksum(const std::vector<std::tuple<uint32_t, uint32_t, size_t, size_t>>& checksums) {
+    ChecksumInfo finalResult{};
     finalResult.fixNeeded = false;
     for (const auto& i : checksums) {
         if (_file.readWord(std::get<3>(i) - 4) == 0xC3C3) {
             continue;
         }
-        auto res = checkAndFixChecksum(std::get<0>(i), std::get<2>(i), std::get<3>(i), std::get<1>(i));
+        finalResult.fixNeeded += checkAndFixChecksum(std::get<0>(i), std::get<2>(i), std::get<3>(i), std::get<1>(i)) ? 1 : 0;
 
         finalResult.computedBlocks++;
         finalResult.checksumBlocksThatAreChecked++;
-        finalResult.fixNeeded += res.fixNeeded;
     }
 
     return finalResult;
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
+EDC15Checksum::ChecksumInfo EDC15Checksum::checksumV2002()
 {
 
-    ChecksumResult result{};
-    ChecksumResult tmpResult{};
+    ChecksumInfo result{};
+    ChecksumInfo tmpResult{};
 
     uint32_t b0 = checksum(0x00000000, 0x00000, 0x08000);
     b0 = MemoryOperations::pack(MemoryOperations::lo(b0) - 0x79CF, MemoryOperations::hi(b0) - 0x1033);
@@ -149,15 +160,13 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
     uint32_t seedIn = MemoryOperations::pack(MemoryOperations::lo(b0) ^ 0xD565, MemoryOperations::hi(b0) + 0x308A);
     
     // First check
-    tmpResult = checkAndFixChecksum(seedIn, 0x08000, 0x10000, 0x35504531);
+    result.fixNeeded += checkAndFixChecksum(seedIn, 0x08000, 0x10000, 0x35504531) ? 1 : 0;
     result.computedBlocks++;
     result.checksumBlocksThatAreChecked++;
-    result.fixNeeded += tmpResult.fixNeeded;
 
-    tmpResult = checkAndFixChecksum(0x00000000, 0x10000, 0x14000, 0xEFCD8631);
+    result.fixNeeded += checkAndFixChecksum(0x00000000, 0x10000, 0x14000, 0xEFCD8631) ? 1 : 0;
     result.computedBlocks++;
     result.checksumBlocksThatAreChecked++;
-    result.fixNeeded += tmpResult.fixNeeded;
 
     // r1=0x8631
     // r6=0xEFCD
@@ -179,11 +188,9 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
     }
 
     // 2nd checksum
-    tmpResult = checkAndFixChecksum(mainChecksum, 0x70000, 0x70000 + 0x0B80, mainChecksum);
+    result.fixNeeded += checkAndFixChecksum(mainChecksum, 0x70000, 0x70000 + 0x0B80, mainChecksum) ? 1 : 0;
     result.computedBlocks++;
     result.checksumBlocksThatAreChecked++;
-    uint32_t ncs = tmpResult.sum;
-    result.fixNeeded += tmpResult.fixNeeded;
 
     //DPP0=0x34
     std::array<uint32_t, 3> baseDPPs = { 0x3C, 0x38, 0x34 };
@@ -200,10 +207,9 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
         // Then ncs is mainChecksum so it gives the same args and is therefore already fixed
         if (dpp != 0x3C) { 
             // 50000 -> 50B80, 60000 -> 60B80
-            tmpResult = checkAndFixChecksum(ncs, baseAddr, baseAddr + 0xB80, mainChecksum);
+            result.fixNeeded += checkAndFixChecksum(mainChecksum, baseAddr, baseAddr + 0xB80, mainChecksum) ? 1 : 0;
             result.computedBlocks++;
             result.checksumBlocksThatAreChecked++;
-            result.fixNeeded += tmpResult.fixNeeded;
         }
 
         // 50B80 -> 5C000, 60B80 -> 6C000, 70B80 -> 7C000
@@ -211,10 +217,9 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
         result.computedBlocks++;
 
         // 4C000 -> 50000, 5C000 -> 60000, 6C000 -> 70000
-        tmpResult = checkAndFixChecksum(seed, baseAddr - 0x4000, baseAddr, mainChecksum);
+        result.fixNeeded += checkAndFixChecksum(seed, baseAddr - 0x4000, baseAddr, mainChecksum) ? 1 : 0;
         result.computedBlocks++;
         result.checksumBlocksThatAreChecked++;
-        result.fixNeeded += tmpResult.fixNeeded;
 
     }
 
@@ -222,20 +227,27 @@ EDC15Checksum::ChecksumResult EDC15Checksum::checksumV2002()
 
 }
 
-EDC15Checksum::ChecksumResult EDC15Checksum::checkAndFixChecksum(uint32_t seed, size_t start, size_t stop, uint32_t result) {
-
-    ChecksumResult res;
-    res.fixNeeded = false;
+/// <summary>
+/// Verifies the checksum of a chunk against an expected value and, if it does not match,
+/// patches the last 4 bytes of the chunk with a correction value so that it does.
+/// The correction is stored as two little-endian 16-bit words, high word first (C166 layout).
+/// </summary>
+/// <param name="seed">Initial seed passed to the checksum function</param>
+/// <param name="start">Start address of the chunk (inclusive)</param>
+/// <param name="stop">End address of the chunk (exclusive); the correction occupies [stop-4, stop)</param>
+/// <param name="result">Expected checksum of the whole chunk</param>
+/// <returns>true if the chunk was patched, false if the checksum was already correct</returns>
+bool EDC15Checksum::checkAndFixChecksum(uint32_t seed, size_t start, size_t stop, uint32_t result) {
 
     uint32_t acc = checksum(seed, start, stop);
     if (acc != result) {
-        res.fixNeeded = 1;
         auto corr = correction(seed, start, stop - 4, result);
         _file.writeLittleEndian(stop - 4, static_cast<uint16_t>(corr >> 16));
         _file.writeLittleEndian(stop - 2, static_cast<uint16_t>(corr));
+        return true;
     }
-    res.sum = result;
-    return res;
+
+    return false;
 }
 
 uint32_t EDC15Checksum::checksum(uint32_t seed, size_t start, size_t stop)

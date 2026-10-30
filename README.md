@@ -47,26 +47,24 @@ enum class ChecksumTYPE {
     TDI2002
 };
 
-struct ChecksumResult {
+struct ChecksumInfo {
     size_t fixNeeded;
     size_t computedBlocks;
     size_t checksumBlocksThatAreChecked;
-    uint32_t sum;
 };
 
 EDC15Checksum(EDC15File& file);
-ChecksumResult checksum(std::optional<std::filesystem::path> path = std::nullopt);
+ChecksumInfo checksum(const std::optional<std::filesystem::path>& path = std::nullopt);
 ChecksumTYPE getChecksumType();
 ```
 
-`ChecksumResult` fields:
+`ChecksumInfo` fields:
 
 | Field | Description |
 |---|---|
 | `fixNeeded` | Number of checksum blocks whose stored value was wrong and had to be fixed |
 | `computedBlocks` | Number of blocks that are only computed (no checksum stored in the file) |
 | `checksumBlocksThatAreChecked` | Number of blocks whose checksum is stored in the file and verified/fixed |
-| `sum` | Internal value (correct checksum at the end of a block); not meaningful in the result of `checksum()` |
 
 Example:
 
@@ -75,7 +73,7 @@ EDC15File file(/* ... */);
 EDC15Checksum cs(file);
 
 EDC15Checksum::ChecksumTYPE type = cs.getChecksumType();
-ChecksumResult result = cs.checksum("038906019NJ.cs.bin");
+EDC15Checksum::ChecksumInfo result = cs.checksum("038906019NJ.cs.bin");
 ```
 
 ## Disclaimer
