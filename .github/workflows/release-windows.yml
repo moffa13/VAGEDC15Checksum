@@ -24,7 +24,7 @@ jobs:
         run: >
           cmake -S . -B build -A x64
           -DCMAKE_MSVC_RUNTIME_LIBRARY=MultiThreaded
-          -DAPP_VERSION=${{ github.ref_name }}
+          "-DAPP_VERSION=${{ github.ref_name }}"
 
       - name: Build
         run: cmake --build build --config Release --parallel
