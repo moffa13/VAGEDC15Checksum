@@ -1,6 +1,7 @@
 #include "Core/CommandInterpreter.h"
 #include "EDC15/EDC15Checksum.h"
 #include "Logging/Logger.h"
+#include "version.h"
 #include <string_view>
 #include <format>
 
@@ -19,17 +20,15 @@ void printUsage(std::string_view errorMessage = "");
 int main(int argc, char* argv[])
 {
 
-    Logger::print("------------------ VAGEDC15Checksum tool ------------------");
+    Logger::print("------------- VAGEDC15Checksum tool " VERSION_FULL " -------------");
     Logger::print("                 Created By Moffa13@moffa13.com                ");
     Logger::breakLine(1);
 
 #ifdef NDEBUG
-    Logger::level = Logger::Level::Info;
-#else
     Logger::level = Logger::Level::Debug;
+#else
+    Logger::level = Logger::Level::Info;
 #endif
-
-
 
     CommandInterpreter interpreter{ argc, argv };
 

@@ -1,0 +1,32 @@
+IDI_ICON1               ICON    "VAGEDC15Checksum.ico"
+
+#include <windows.h>
+#include "version.h"
+
+VS_VERSION_INFO VERSIONINFO
+FILEVERSION     FILEVERSION_COMMAS
+PRODUCTVERSION  FILEVERSION_COMMAS
+BEGIN
+    BLOCK "StringFileInfo"
+    BEGIN
+        BLOCK "040904E4"
+        BEGIN
+            VALUE "CompanyName",        COMPANYNAME
+            VALUE "FileDescription",    FILEDESCRIPTION
+            VALUE "FileVersion",        FILEVERSION_F
+            VALUE "InternalName",       INTERNALNAME
+            VALUE "LegalCopyright",     LEGALCOPYRIGHT
+            VALUE "LegalTrademarks1",   LEGALTRADEMARKS1
+            VALUE "LegalTrademarks2",   LEGALTRADEMARKS2
+            VALUE "OriginalFilename",   ORIGINALFILENAME
+            VALUE "ProductName",        PRODUCTNAME
+            VALUE "ProductVersion",     FILEVERSION_F
+        END
+    END
+
+    BLOCK "VarFileInfo"
+    BEGIN
+        VALUE "Translation", 0x040C, 1252
+    END
+END
+

@@ -1,0 +1,15 @@
+#pragma once
+
+#define FILEVERSION_COMMAS  @V_MAJOR@,@V_MINOR@,@V_PATCH@,@V_BUILD@
+#define FILEVERSION_F       "@V_MAJOR@.@V_MINOR@.@V_PATCH@.@V_BUILD@\0"
+#define VERSION_FULL        "@APP_VERSION@"
+
+#define COMPANYNAME         "Moffa13.com"
+#define FILEDESCRIPTION     "VAG EDC15 Checksum"
+#define INTERNALNAME        "VAGEDC15Checksum"
+#define LEGALCOPYRIGHT      "Copyright 2026 Moffa13.com"
+#define LEGALTRADEMARKS1    "All Rights Reserved"
+#define LEGALTRADEMARKS2    LEGALTRADEMARKS1
+#define ORIGINALFILENAME    "VAGEDC15Checksum.exe"
+#define PRODUCTNAME         "VAG EDC15 Checksum"
+#define COMPANYDOMAIN       "moffa13.com"
