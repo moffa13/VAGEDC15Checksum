@@ -1,7 +1,7 @@
-#include "Core/CommandInterpreter.h"
 #include "EDC15/EDC15Checksum.h"
-#include "Logging/Logger.h"
 #include "version.h"
+#include <vagedc15/Core/CommandInterpreter.h>
+#include <vagedc15/Logging/Logger.h>
 #include <string_view>
 #include <format>
 #include <vector>

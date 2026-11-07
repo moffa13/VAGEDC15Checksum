@@ -1,6 +1,6 @@
 #include "EDC15Checksum.h"
-#include "Logging/Logger.h"
-#include "EDC15/EDC15File.h"
+#include <vagedc15/Logging/Logger.h>
+#include <vagedc15/EDC15/EDC15File.h>
 #include <array>
 #include <tuple>
 #include <optional>

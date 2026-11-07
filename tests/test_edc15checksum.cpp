@@ -1,6 +1,6 @@
 #include <gtest/gtest.h>
 #include "EDC15/EDC15Checksum.h"
-#include "EDC15/EDC15File.h"
+#include <vagedc15/EDC15/EDC15File.h>
 
 TEST(EDC15ChecksumTest, TestFile012FK)
 {
